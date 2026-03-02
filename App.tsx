@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import GameCanvas from './components/GameCanvas';
 import UIOverlay from './components/UIOverlay';
 import { GameState, HighScore, Language } from './types';
@@ -11,6 +11,18 @@ const App: React.FC = () => {
   const [speed, setSpeed] = useState(0);
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [language, setLanguage] = useState<Language>('EN');
+  const keysPressed = useRef<{ [key: string]: boolean }>({});
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('paperBoatHighScores');
@@ -60,7 +72,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-2 md:p-4 overflow-hidden">
+    <div className="min-h-screen bg-black flex items-center justify-center p-2 md:p-4 overflow-hidden" ref={containerRef}>
       <div 
         className="relative w-full max-w-2xl max-h-screen"
         style={{ 
@@ -76,6 +88,7 @@ const App: React.FC = () => {
           setJumpEnergy={setJumpEnergy}
           setSpeedDisplay={setSpeed}
           togglePause={togglePause}
+          keysPressed={keysPressed}
         />
         <UIOverlay
           gameState={gameState}
@@ -91,6 +104,8 @@ const App: React.FC = () => {
           togglePause={togglePause}
           language={language}
           setLanguage={setLanguage}
+          keysPressed={keysPressed}
+          toggleFullscreen={toggleFullscreen}
         />
       </div>
       

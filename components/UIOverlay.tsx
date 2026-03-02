@@ -17,6 +17,8 @@ interface UIOverlayProps {
   togglePause: () => void;
   language: Language;
   setLanguage: (lang: Language) => void;
+  keysPressed: React.MutableRefObject<{ [key: string]: boolean }>;
+  toggleFullscreen: () => void;
 }
 
 const UIOverlay: React.FC<UIOverlayProps> = ({
@@ -33,13 +35,33 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   togglePause,
   language,
   setLanguage,
+  keysPressed,
+  toggleFullscreen,
 }) => {
   const [playerName, setPlayerName] = useState('');
   const [introStep, setIntroStep] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
   const [titleText, setTitleText] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   const t = TRANSLATIONS[language];
+
+  const handleTouchStart = (key: string) => {
+    keysPressed.current[key] = true;
+  };
+
+  const handleTouchEnd = (key: string) => {
+    keysPressed.current[key] = false;
+  };
 
   useEffect(() => {
     if (gameState === GameState.TITLE) {
@@ -108,6 +130,21 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
               backgroundPosition: '0 16px',
           }}
         >
+          <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
+              <button 
+                  onClick={toggleFullscreen}
+                  className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                  style={{
+                      borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                      border: 'solid 3px #3b82f6'
+                  }}
+                  title="Toggle Fullscreen"
+              >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+              </button>
+          </div>
           <h2 className="text-5xl mb-8 retro-font text-blue-800 drop-shadow-md">{t.PAUSED}</h2>
           
           <div className="flex flex-col gap-4 w-full max-w-xs">
@@ -156,6 +193,24 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             boxShadow: 'inset 0 0 50px rgba(0,0,0,0.2)'
         }}
       >
+        <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
+            <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFullscreen();
+                }}
+                className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                style={{
+                    borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                    border: 'solid 3px #3b82f6'
+                }}
+                title="Toggle Fullscreen"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+        </div>
         <h1 className="text-5xl md:text-7xl text-blue-800 mb-6 retro-font tracking-widest uppercase drop-shadow-md min-h-[80px] flex items-center justify-center" style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.1)' }}>
           {titleText}
         </h1>
@@ -192,6 +247,24 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             boxShadow: 'inset 0 0 50px rgba(0,0,0,0.2)'
         }}
       >
+        <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
+            <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFullscreen();
+                }}
+                className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                style={{
+                    borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                    border: 'solid 3px #3b82f6'
+                }}
+                title="Toggle Fullscreen"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+        </div>
         <div className="max-w-xl retro-font text-2xl md:text-3xl leading-relaxed text-gray-800 h-32 flex items-center justify-center" style={{ textShadow: '1px 1px 0 rgba(255,255,255,0.5)' }}>
             <p className="italic">{displayedText}</p>
         </div>
@@ -213,6 +286,21 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             boxShadow: 'inset 0 0 50px rgba(0,0,0,0.2)'
         }}
       >
+        <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
+            <button 
+                onClick={toggleFullscreen}
+                className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                style={{
+                    borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                    border: 'solid 3px #3b82f6'
+                }}
+                title="Toggle Fullscreen"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+        </div>
         <h2 className="text-4xl text-blue-800 mb-8 retro-font drop-shadow-md">{t.CONTROLS}</h2>
         
         <div 
@@ -255,7 +343,20 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             boxShadow: 'inset 0 0 50px rgba(0,0,0,0.2)'
         }}
       >
-        <div className="absolute top-4 right-4 flex gap-2">
+        <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
+            <button 
+                onClick={toggleFullscreen}
+                className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                style={{
+                    borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                    border: 'solid 3px #3b82f6'
+                }}
+                title="Toggle Fullscreen"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
             <button 
                 onClick={() => setLanguage('EN')} 
                 className={`px-3 py-1 font-bold retro-font ${language === 'EN' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-600'}`}
@@ -342,6 +443,21 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             boxShadow: 'inset 0 0 50px rgba(0,0,0,0.2)'
         }}
       >
+        <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
+            <button 
+                onClick={toggleFullscreen}
+                className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                style={{
+                    borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                    border: 'solid 3px #3b82f6'
+                }}
+                title="Toggle Fullscreen"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+        </div>
         <h2 className="text-4xl text-green-700 mb-8 retro-font drop-shadow-md">{t.LEADERBOARD}</h2>
         
         <div 
@@ -390,6 +506,21 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             boxShadow: 'inset 0 0 50px rgba(0,0,0,0.3)'
         }}
       >
+        <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
+            <button 
+                onClick={toggleFullscreen}
+                className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                style={{
+                    borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                    border: 'solid 3px #3b82f6'
+                }}
+                title="Toggle Fullscreen"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+        </div>
         <h2 
             className="text-5xl mb-4 retro-font text-red-800 bg-white/80 px-6 py-3 rotate-2 shadow-xl backdrop-blur-sm"
             style={{
@@ -451,6 +582,21 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             boxShadow: 'inset 0 0 50px rgba(0,0,0,0.2)'
         }}
       >
+        <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
+            <button 
+                onClick={toggleFullscreen}
+                className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                style={{
+                    borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                    border: 'solid 3px #3b82f6'
+                }}
+                title="Toggle Fullscreen"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+        </div>
         <h2 
             className="text-4xl md:text-5xl mb-6 retro-font text-green-800 bg-white/80 px-8 py-4 shadow-xl backdrop-blur-sm -rotate-2"
             style={{
@@ -529,20 +675,35 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         </div>
 
         {/* Right Side: Pause & Vertical Progress */}
-        <div className="flex flex-col items-end gap-4 h-full">
-            <button 
-                onClick={togglePause}
-                className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 pointer-events-auto shadow-lg"
-                style={{
-                    borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
-                    border: 'solid 3px #3b82f6'
-                }}
-                title="Pause Game"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </button>
+        <div className="flex flex-col items-end gap-4 h-full pointer-events-auto">
+            <div className="flex gap-2">
+                <button 
+                    onClick={toggleFullscreen}
+                    className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                    style={{
+                        borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                        border: 'solid 3px #3b82f6'
+                    }}
+                    title="Toggle Fullscreen"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                </button>
+                <button 
+                    onClick={togglePause}
+                    className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
+                    style={{
+                        borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
+                        border: 'solid 3px #3b82f6'
+                    }}
+                    title="Pause Game"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </button>
+            </div>
 
              {/* Vertical Progress Bar */}
              <div 
@@ -589,6 +750,68 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
              </div>
         </div>
       </div>
+
+      {/* Mobile Controls */}
+      {isMobile && gameState === GameState.PLAYING && (
+        <div className="absolute inset-0 pointer-events-none z-50">
+            {/* Left/Right Controls */}
+            <div className="absolute bottom-32 left-4 flex gap-4 pointer-events-auto">
+                <button 
+                    onPointerDown={() => handleTouchStart('KeyA')}
+                    onPointerUp={() => handleTouchEnd('KeyA')}
+                    onPointerLeave={() => handleTouchEnd('KeyA')}
+                    className="w-16 h-16 bg-white/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-3xl select-none active:bg-white/60"
+                    style={{ borderRadius: '50%', border: 'solid 2px #3b82f6' }}
+                >
+                    ⬅️
+                </button>
+                <button 
+                    onPointerDown={() => handleTouchStart('KeyD')}
+                    onPointerUp={() => handleTouchEnd('KeyD')}
+                    onPointerLeave={() => handleTouchEnd('KeyD')}
+                    className="w-16 h-16 bg-white/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-3xl select-none active:bg-white/60"
+                    style={{ borderRadius: '50%', border: 'solid 2px #3b82f6' }}
+                >
+                    ➡️
+                </button>
+            </div>
+
+            {/* Jump/Action Controls */}
+            <div className="absolute bottom-32 right-4 flex flex-col gap-4 pointer-events-auto">
+                <button 
+                    onPointerDown={() => handleTouchStart('Space')}
+                    onPointerUp={() => handleTouchEnd('Space')}
+                    onPointerLeave={() => handleTouchEnd('Space')}
+                    className="w-20 h-20 bg-blue-500/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-4xl select-none active:bg-blue-500/60"
+                    style={{ borderRadius: '50%', border: 'solid 3px #1e3a8a' }}
+                >
+                    🦘
+                </button>
+            </div>
+
+            {/* Accelerate/Brake Controls */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-8 pointer-events-auto">
+                <button 
+                    onPointerDown={() => handleTouchStart('KeyS')}
+                    onPointerUp={() => handleTouchEnd('KeyS')}
+                    onPointerLeave={() => handleTouchEnd('KeyS')}
+                    className="w-16 h-16 bg-red-500/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-2xl select-none active:bg-red-500/60"
+                    style={{ borderRadius: '50%', border: 'solid 2px #7f1d1d' }}
+                >
+                    🛑
+                </button>
+                <button 
+                    onPointerDown={() => handleTouchStart('KeyW')}
+                    onPointerUp={() => handleTouchEnd('KeyW')}
+                    onPointerLeave={() => handleTouchEnd('KeyW')}
+                    className="w-20 h-20 bg-green-500/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-3xl select-none active:bg-green-500/60"
+                    style={{ borderRadius: '50%', border: 'solid 3px #14532d' }}
+                >
+                    🚀
+                </button>
+            </div>
+        </div>
+      )}
 
       {/* Bottom Bar */}
       <div className="flex justify-center items-end pb-4 gap-8 px-8">

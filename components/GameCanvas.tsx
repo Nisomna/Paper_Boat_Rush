@@ -30,6 +30,7 @@ interface GameCanvasProps {
   setJumpEnergy: (val: number) => void;
   setSpeedDisplay: (val: number) => void;
   togglePause: () => void;
+  keysPressed: React.MutableRefObject<{ [key: string]: boolean }>;
 }
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -40,6 +41,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   setJumpEnergy,
   setSpeedDisplay,
   togglePause,
+  keysPressed,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>();
@@ -63,7 +65,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     knockbackY: 0,
   });
   const entitiesRef = useRef<Entity[]>([]);
-  const keysPressed = useRef<{ [key: string]: boolean }>({});
   const particlesRef = useRef<Particle[]>([]);
   const wakeParticlesRef = useRef<{x: number, y: number, life: number, maxLife: number, size: number}[]>([]);
   const floatingTextsRef = useRef<FloatingText[]>([]);
@@ -79,13 +80,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       }
 
       keysPressed.current[e.code] = true;
-      if (e.code === 'Space' && gameState === GameState.PLAYING && playerRef.current.status === 'NORMAL' && !playerRef.current.isJumping) {
-        if (playerRef.current.jumpEnergy >= JUMP_ENERGY_COST) {
-            playerRef.current.isJumping = true;
-            playerRef.current.jumpEnergy -= JUMP_ENERGY_COST;
-            jumpFrameRef.current = JUMP_DURATION;
-        }
-      }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       keysPressed.current[e.code] = false;
@@ -97,7 +91,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [gameState, togglePause]);
+  }, [gameState, togglePause, keysPressed]);
 
   // Reset Game Logic
   const initGame = useCallback(() => {
@@ -224,6 +218,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   const updatePhysics = () => {
     const p = playerRef.current;
+
+    // Handle Jump Trigger (from keysPressed)
+    if (keysPressed.current['Space'] && gameState === GameState.PLAYING && p.status === 'NORMAL' && !p.isJumping) {
+        if (p.jumpEnergy >= JUMP_ENERGY_COST) {
+            p.isJumping = true;
+            p.jumpEnergy -= JUMP_ENERGY_COST;
+            jumpFrameRef.current = JUMP_DURATION;
+        }
+    }
 
     // Finish Line Logic
     if (p.distance >= GOAL_DISTANCE + 800) { // Drive slightly past 
