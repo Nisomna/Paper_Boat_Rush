@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GameState, HighScore, Language } from '../types';
 import { GOAL_DISTANCE } from '../constants';
 import { TRANSLATIONS } from '../translations';
@@ -43,6 +43,8 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   const [displayedText, setDisplayedText] = useState('');
   const [titleText, setTitleText] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const lastTapTime = useRef<number>(0);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -52,15 +54,51 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (gameState === GameState.PLAYING && isMobile) {
+      setShowTutorial(true);
+      const timer = setTimeout(() => setShowTutorial(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState, isMobile]);
   
   const t = TRANSLATIONS[language];
 
-  const handleTouchStart = (key: string) => {
-    keysPressed.current[key] = true;
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isMobile || gameState !== GameState.PLAYING) return;
+    
+    const touch = e.touches[0];
+    const width = window.innerWidth;
+    const x = touch.clientX;
+
+    // Double tap detection
+    const now = Date.now();
+    if (now - lastTapTime.current < 300) {
+      keysPressed.current['Space'] = true;
+      // Reset tap time to prevent triple tap jump
+      lastTapTime.current = 0;
+    } else {
+      lastTapTime.current = now;
+      // Movement zones
+      if (x < width / 2) {
+        keysPressed.current['KeyA'] = true;
+        keysPressed.current['KeyD'] = false;
+      } else {
+        keysPressed.current['KeyD'] = true;
+        keysPressed.current['KeyA'] = false;
+      }
+      // Auto-accelerate on mobile when touching
+      keysPressed.current['KeyW'] = true;
+    }
   };
 
-  const handleTouchEnd = (key: string) => {
-    keysPressed.current[key] = false;
+  const handleTouchEnd = () => {
+    if (!isMobile) return;
+    keysPressed.current['KeyA'] = false;
+    keysPressed.current['KeyD'] = false;
+    keysPressed.current['Space'] = false;
+    keysPressed.current['KeyW'] = false;
   };
 
   useEffect(() => {
@@ -149,7 +187,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
           
           <div className="flex flex-col gap-4 w-full max-w-xs">
               <button
-                onClick={togglePause}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    togglePause();
+                }}
                 className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 active:translate-y-1 transition-all retro-font text-xl shadow-lg"
                 style={{
                     borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -160,7 +201,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
               </button>
               
               <button
-                onClick={resetGame}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    resetGame();
+                }}
                 className="bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-6 active:translate-y-1 transition-all retro-font text-xl shadow-lg"
                 style={{
                     borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -319,7 +363,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         </div>
 
         <button
-            onClick={() => setGameState(GameState.MENU)}
+            onClick={(e) => {
+                e.stopPropagation();
+                setGameState(GameState.MENU);
+            }}
             className="mt-8 bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 active:translate-y-1 transition-all retro-font shadow-lg"
             style={{
                 borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -345,7 +392,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
       >
         <div className="absolute top-4 right-4 flex gap-2 pointer-events-auto">
             <button 
-                onClick={toggleFullscreen}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFullscreen();
+                }}
                 className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
                 style={{
                     borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -358,7 +408,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                 </svg>
             </button>
             <button 
-                onClick={() => setLanguage('EN')} 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setLanguage('EN');
+                }} 
                 className={`px-3 py-1 font-bold retro-font ${language === 'EN' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-600'}`}
                 style={{
                     borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -368,7 +421,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                 EN
             </button>
             <button 
-                onClick={() => setLanguage('ES')} 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setLanguage('ES');
+                }} 
                 className={`px-3 py-1 font-bold retro-font ${language === 'ES' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-600'}`}
                 style={{
                     borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -385,7 +441,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         
         <div className="flex flex-col gap-4 w-full max-w-xs">
             <button
-                onClick={startGame}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    startGame();
+                }}
                 className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 active:translate-y-1 transition-all retro-font text-xl shadow-lg"
                 style={{
                     borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -396,7 +455,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             </button>
 
             <button
-                onClick={() => setGameState(GameState.CONTROLS)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setGameState(GameState.CONTROLS);
+                }}
                 className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-6 active:translate-y-1 transition-all retro-font text-xl shadow-lg"
                 style={{
                     borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -407,7 +469,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             </button>
 
             <button
-                onClick={() => setGameState(GameState.LEADERBOARD)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setGameState(GameState.LEADERBOARD);
+                }}
                 className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 active:translate-y-1 transition-all retro-font text-xl shadow-lg"
                 style={{
                     borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -482,7 +547,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         </div>
 
         <button
-            onClick={() => setGameState(GameState.MENU)}
+            onClick={(e) => {
+                e.stopPropagation();
+                setGameState(GameState.MENU);
+            }}
             className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 active:translate-y-1 transition-all retro-font shadow-lg"
             style={{
                 borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -535,7 +603,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         
         <div className="flex flex-col gap-4 w-full max-w-xs">
             <button
-              onClick={resetGame}
+              onClick={(e) => {
+                  e.stopPropagation();
+                  resetGame();
+              }}
               className="bg-red-700 text-white hover:bg-red-600 font-bold py-4 px-10 shadow-xl transform hover:scale-105 transition-transform retro-font text-xl"
               style={{
                   borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -546,7 +617,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             </button>
 
             <button
-              onClick={() => setGameState(GameState.LEADERBOARD)}
+              onClick={(e) => {
+                  e.stopPropagation();
+                  setGameState(GameState.LEADERBOARD);
+              }}
               className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-10 shadow-xl transform hover:scale-105 transition-transform retro-font text-xl"
               style={{
                   borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -557,7 +631,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             </button>
 
             <button
-              onClick={() => setGameState(GameState.MENU)}
+              onClick={(e) => {
+                  e.stopPropagation();
+                  setGameState(GameState.MENU);
+              }}
               className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-4 px-10 shadow-xl transform hover:scale-105 transition-transform retro-font text-xl"
               style={{
                   borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -635,7 +712,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         </div>
 
         <button
-          onClick={() => onSaveScore(playerName)}
+          onClick={(e) => {
+              e.stopPropagation();
+              onSaveScore(playerName);
+          }}
           className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-10 shadow-lg active:translate-y-1 transition-all retro-font text-xl"
           style={{
               borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -678,7 +758,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         <div className="flex flex-col items-end gap-4 h-full pointer-events-auto">
             <div className="flex gap-2">
                 <button 
-                    onClick={toggleFullscreen}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFullscreen();
+                    }}
                     className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
                     style={{
                         borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -691,7 +774,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                     </svg>
                 </button>
                 <button 
-                    onClick={togglePause}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        togglePause();
+                    }}
                     className="bg-white/80 hover:bg-gray-100 text-blue-900 p-2 shadow-lg"
                     style={{
                         borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
@@ -751,65 +837,31 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         </div>
       </div>
 
-      {/* Mobile Controls */}
+      {/* Mobile Controls & Tutorial */}
       {isMobile && gameState === GameState.PLAYING && (
-        <div className="absolute inset-0 pointer-events-none z-50">
-            {/* Left/Right Controls */}
-            <div className="absolute bottom-32 left-4 flex gap-4 pointer-events-auto">
-                <button 
-                    onPointerDown={() => handleTouchStart('KeyA')}
-                    onPointerUp={() => handleTouchEnd('KeyA')}
-                    onPointerLeave={() => handleTouchEnd('KeyA')}
-                    className="w-16 h-16 bg-white/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-3xl select-none active:bg-white/60"
-                    style={{ borderRadius: '50%', border: 'solid 2px #3b82f6' }}
-                >
-                    ⬅️
-                </button>
-                <button 
-                    onPointerDown={() => handleTouchStart('KeyD')}
-                    onPointerUp={() => handleTouchEnd('KeyD')}
-                    onPointerLeave={() => handleTouchEnd('KeyD')}
-                    className="w-16 h-16 bg-white/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-3xl select-none active:bg-white/60"
-                    style={{ borderRadius: '50%', border: 'solid 2px #3b82f6' }}
-                >
-                    ➡️
-                </button>
-            </div>
-
-            {/* Jump/Action Controls */}
-            <div className="absolute bottom-32 right-4 flex flex-col gap-4 pointer-events-auto">
-                <button 
-                    onPointerDown={() => handleTouchStart('Space')}
-                    onPointerUp={() => handleTouchEnd('Space')}
-                    onPointerLeave={() => handleTouchEnd('Space')}
-                    className="w-20 h-20 bg-blue-500/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-4xl select-none active:bg-blue-500/60"
-                    style={{ borderRadius: '50%', border: 'solid 3px #1e3a8a' }}
-                >
-                    🦘
-                </button>
-            </div>
-
-            {/* Accelerate/Brake Controls */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-8 pointer-events-auto">
-                <button 
-                    onPointerDown={() => handleTouchStart('KeyS')}
-                    onPointerUp={() => handleTouchEnd('KeyS')}
-                    onPointerLeave={() => handleTouchEnd('KeyS')}
-                    className="w-16 h-16 bg-red-500/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-2xl select-none active:bg-red-500/60"
-                    style={{ borderRadius: '50%', border: 'solid 2px #7f1d1d' }}
-                >
-                    🛑
-                </button>
-                <button 
-                    onPointerDown={() => handleTouchStart('KeyW')}
-                    onPointerUp={() => handleTouchEnd('KeyW')}
-                    onPointerLeave={() => handleTouchEnd('KeyW')}
-                    className="w-20 h-20 bg-green-500/40 backdrop-blur-sm shadow-lg flex items-center justify-center text-3xl select-none active:bg-green-500/60"
-                    style={{ borderRadius: '50%', border: 'solid 3px #14532d' }}
-                >
-                    🚀
-                </button>
-            </div>
+        <div 
+            className="absolute inset-0 z-40 pointer-events-auto select-none"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+        >
+            {/* Tutorial Arrows */}
+            {showTutorial && (
+                <div className="absolute inset-0 flex items-center justify-between px-12 pointer-events-none animate-pulse">
+                    <div className="flex flex-col items-center gap-2 opacity-60">
+                        <div className="text-6xl text-blue-800">⬅️</div>
+                        <div className="retro-font text-blue-900 text-sm bg-white/50 px-2 py-1 rounded">{t.STEER}</div>
+                    </div>
+                    <div className="flex flex-col items-center gap-4 opacity-80">
+                        <div className="text-5xl text-blue-800">👆👆</div>
+                        <div className="retro-font text-blue-900 text-sm bg-white/50 px-2 py-1 rounded">{t.JUMP}</div>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 opacity-60">
+                        <div className="text-6xl text-blue-800">➡️</div>
+                        <div className="retro-font text-blue-900 text-sm bg-white/50 px-2 py-1 rounded">{t.STEER}</div>
+                    </div>
+                </div>
+            )}
         </div>
       )}
 

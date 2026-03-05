@@ -1,6 +1,19 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import rough from 'roughjs/bin/rough';
 import { GameState, Entity, Player, EntityType, Particle, PlayerStatus, FloatingText } from '../types';
+import barcoSvg from '../assets/Barco.svg';
+import moscaSvg from '../assets/mosca.svg';
+import canicaSvg from '../assets/canica.svg';
+
+const barcoImage = new Image();
+barcoImage.src = barcoSvg;
+
+const moscaImage = new Image();
+moscaImage.src = moscaSvg;
+
+const canicaImage = new Image();
+canicaImage.src = canicaSvg;
+
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -43,6 +56,31 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   togglePause,
   keysPressed,
 }) => {
+  // Image Loading State
+  const [imagesLoaded, setImagesLoaded] = React.useState(false);
+
+  useEffect(() => {
+    let loadedCount = 0;
+    const images = [barcoImage, moscaImage, canicaImage];
+    const totalImages = images.length;
+
+    const onImageLoad = () => {
+      loadedCount++;
+      if (loadedCount === totalImages) {
+        setImagesLoaded(true);
+      }
+    };
+
+    images.forEach(img => {
+      if (img.complete) {
+        onImageLoad();
+      } else {
+        img.onload = onImageLoad;
+        img.onerror = onImageLoad;
+      }
+    });
+  }, []);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>();
   const frameCountRef = useRef<number>(0);
@@ -193,7 +231,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   // Main Loop
   const animate = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !imagesLoaded) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -448,13 +486,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
               col='#D69E2E'; 
           }
           else if (obsRoll > 0.35) { 
-              type=EntityType.MARBLE; w=30; h=30; col='#FC8181';
+              type=EntityType.MARBLE; w=45; h=45; col='#FC8181';
               // Relative velocity
               vx = (Math.random()>0.5?1:-1) * (0.005 + Math.random()*0.005);
           }
           else {
               // INSECT - Predictive Enemy
-              type = EntityType.INSECT; w=35; h=35; col='#68D391'; // Greenish
+              type = EntityType.INSECT; w=70; h=70; col='#68D391'; // Greenish
           }
       }
 
@@ -574,8 +612,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const p = playerRef.current;
     if (p.invulnerable > 0 || p.status !== 'NORMAL') return;
 
-    const pw = 40; // width of boat
-    const ph = 65; // height of boat
+    const pw = 50; // width of boat
+    const ph = 80; // height of boat
     const px = p.x * CANVAS_WIDTH - pw / 2; // left edge
     const py = CANVAS_HEIGHT * 0.8 + p.knockbackY - ph / 2; // top edge
 
@@ -832,17 +870,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                 stroke: '#4A5568'
             });
         } else if (e.type === EntityType.MARBLE) {
-            rc.circle(ex + e.width/2, e.y + e.height/2, e.width, {
-                fill: e.color,
-                fillStyle: 'solid',
-                roughness: 1.5,
-                stroke: '#2D3748'
-            });
-            rc.circle(ex + e.width/2 - 5, e.y + e.height/2 - 5, 10, {
-                fill: 'white',
-                fillStyle: 'solid',
-                stroke: 'none'
-            });
+            ctx.drawImage(canicaImage, 700, 200, 600, 600, ex, e.y, e.width, e.height);
         } else if (e.type === EntityType.HOLE) {
              rc.ellipse(ex + e.width/2, e.y + e.height/2, e.width, e.height, {
                  fill: '#1A202C',
@@ -883,20 +911,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                  roughness: 3
              });
         } else if (e.type === EntityType.INSECT) {
-             rc.polygon([
-                 [ex + e.width/2, e.y],
-                 [ex + e.width, e.y + e.height],
-                 [ex, e.y + e.height]
-             ], {
-                 fill: '#48BB78',
-                 fillStyle: 'solid',
-                 stroke: '#276749',
-                 roughness: 1.5
-             });
-             
-             // Eyes
-             rc.circle(ex + e.width/2 - 5, e.y + e.height/2, 6, { fill: '#C53030', fillStyle: 'solid', stroke: 'none' });
-             rc.circle(ex + e.width/2 + 5, e.y + e.height/2, 6, { fill: '#C53030', fillStyle: 'solid', stroke: 'none' });
+             ctx.drawImage(moscaImage, 750, 200, 450, 600, ex, e.y, e.width, e.height);
         } else {
              rc.rectangle(ex, e.y, e.width, e.height, { 
                  fill: e.color, 
@@ -947,12 +962,18 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             // Draw Shadow
             if (p.status !== 'FALLING') {
                 ctx.save();
-                ctx.translate(px, py + 20);
+                ctx.translate(px, py + 15);
+                
+                let rotation = 0;
+                if (keysPressed.current['KeyA']) rotation = -0.2;
+                if (keysPressed.current['KeyD']) rotation = 0.2;
+                ctx.rotate(rotation);
+                
                 const shadowScale = 1 - (p.jumpHeight * 0.3);
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 25 * shadowScale, 10 * shadowScale, 0, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.scale(shadowScale, shadowScale * 0.5);
+                
+                ctx.filter = 'brightness(0) opacity(0.4) blur(2px)';
+                ctx.drawImage(barcoImage, 750, 150, 450, 650, -25, -40, 50, 80);
                 ctx.restore();
             }
 
@@ -976,25 +997,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             // We need to temporarily disable shadow for roughjs to look right
             ctx.shadowColor = 'transparent';
             
-            rc.polygon([
-                [0, -35],
-                [20, 30],
-                [0, 20],
-                [-20, 30]
-            ], {
-                fill: '#FFF',
-                fillStyle: 'solid',
-                stroke: '#CBD5E0',
-                strokeWidth: 2,
-                roughness: 1.5,
-                bowing: 1
-            });
-            
-            rc.line(0, -35, 0, 20, {
-                stroke: '#CBD5E0',
-                strokeWidth: 2,
-                roughness: 1.5
-            });
+            ctx.drawImage(barcoImage, 750, 150, 450, 650, -25, -40, 50, 80);
 
             ctx.restore();
         }
@@ -1033,21 +1036,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   };
 
   return (
-    <div 
-        className="absolute inset-0 overflow-hidden shadow-2xl"
-        style={{
-            borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px',
-            border: 'solid 4px #374151'
-        }}
-    >
+    <div className="absolute inset-0 overflow-hidden">
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        className="block bg-gray-900 w-full h-full object-fill"
+        className="block bg-[#1e3a8a] w-full h-full object-fill"
         style={{ 
-            imageRendering: 'pixelated',
-            borderRadius: '255px 15px 225px 15px/15px 225px 15px 255px'
+            imageRendering: 'pixelated'
         }}
       />
     </div>

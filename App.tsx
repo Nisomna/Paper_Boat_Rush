@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import GameCanvas from './components/GameCanvas';
 import UIOverlay from './components/UIOverlay';
 import { GameState, HighScore, Language } from './types';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from './constants';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.TITLE);
@@ -11,8 +12,18 @@ const App: React.FC = () => {
   const [speed, setSpeed] = useState(0);
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [language, setLanguage] = useState<Language>('EN');
+  const [isMobile, setIsMobile] = useState(false);
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -72,12 +83,18 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-2 md:p-4 overflow-hidden" ref={containerRef}>
+    <div className={`min-h-screen ${isMobile ? 'bg-[#1e3a8a]' : 'bg-black'} flex items-center justify-center overflow-hidden`} ref={containerRef}>
       <div 
-        className="relative w-full max-w-2xl max-h-screen"
+        className="relative overflow-hidden shadow-2xl"
         style={{ 
-          maxWidth: 'min(100%, calc(100vh * 3 / 4))',
-          aspectRatio: '3/4'
+          width: '100vw', 
+          height: '100vh',
+          maxWidth: `calc(100vh * (${CANVAS_WIDTH} / ${CANVAS_HEIGHT}))`,
+          maxHeight: `calc(100vw * (${CANVAS_HEIGHT} / ${CANVAS_WIDTH}))`,
+          margin: 'auto',
+          borderRadius: isMobile ? '0' : '255px 15px 225px 15px/15px 225px 15px 255px',
+          border: isMobile ? 'none' : 'solid 4px #374151',
+          position: 'relative'
         }}
       >
         <GameCanvas

@@ -1,5 +1,5 @@
 export const CANVAS_WIDTH = 600;
-export const CANVAS_HEIGHT = 800;
+export const CANVAS_HEIGHT = 1000;
 export const FPS = 60;
 
 // Player Physics
